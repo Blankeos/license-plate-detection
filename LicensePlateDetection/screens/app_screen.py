@@ -42,7 +42,7 @@ class LicensePlateDetection(QMainWindow):
         # CONFIG
         self.ocrReader: BaseOCR = EasyOCR()
         self.detect_interval_counter = 1
-        self.DETECT_INTERVAL = 20
+        self.DETECT_INTERVAL = 5
 
         # Set up the main window
         self.setWindowTitle("License Plate Detection")

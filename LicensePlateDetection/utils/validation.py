@@ -16,8 +16,8 @@ def validate_license_plate(plate):
         return False
 
 # Example usage
-print(validate_license_plate("ABCDE12345")) # Should return True
-print(validate_license_plate("abcde12345")) # Should return False (lowercase letters)
-print(validate_license_plate("ABCDE"))       # Should return False (no digits)
-print(validate_license_plate("12345ABCDE")) # Should return False (starts with digits)
-print(validate_license_plate("ABCDE12345!")) # Should return False (contains special characters)
+# print(validate_license_plate("ABCDE12345")) # Should return True
+# print(validate_license_plate("abcde12345")) # Should return False (lowercase letters)
+# print(validate_license_plate("ABCDE"))       # Should return False (no digits)
+# print(validate_license_plate("12345ABCDE")) # Should return False (starts with digits)
+# print(validate_license_plate("ABCDE12345!")) # Should return False (contains special characters)
