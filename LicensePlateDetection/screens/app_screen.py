@@ -16,6 +16,7 @@ from pathlib import Path
 # src
 from LicensePlateDetection.tablemodels.licenseplates_tablemodel import LicensePlatesTableModel
 from LicensePlateDetection.utils.formatDate import formatDate
+from LicensePlateDetection.utils.validation import validate_license_plate
 from LicensePlateDetection.widgets.flow_layout import FlowLayout
 
 # MODEL_PATH = Path("./cgjj_best.pt").resolve()
@@ -238,9 +239,9 @@ class LicensePlateDetection(QMainWindow):
             # 1. Convert the image to grayscale (For label)
             gray = cv2.cvtColor(crop['im'], cv2.COLOR_BGR2GRAY)
             # 2. Increase the contrast of the gray image
-            # gray = cv2.convertScaleAbs(gray, alpha=0.5, beta=20)
+            gray = cv2.convertScaleAbs(gray, alpha=0.5, beta=50)
             # 3. Threshold the gray image
-            thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+            # thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
             # gray = 255 - thresh
 
 
@@ -263,11 +264,16 @@ class LicensePlateDetection(QMainWindow):
 
             ocr_text, score = self.ocrReader.read(gray)
 
-            label_text = f"{crop['label']} | {ocr_text} {score:.2f}" if ocr_text != None else crop['label']
+            label_text = f"{crop['label']}\n{ocr_text} {score:.2f}" if ocr_text != None else crop['label']
             
-            # Add it to the VLayout and its label
+            label_widget = QLabel(label_text)
+            if (validate_license_plate(ocr_text)):
+                label_widget.setStyleSheet("color: green;")
+            else:
+                label_widget.setStyleSheet("color: red;")
+
             v_layout.addWidget(crop_label)
-            v_layout.addWidget(QLabel(label_text))
+            v_layout.addWidget(label_widget)
 
             self.right_flow_layout.addWidget(v_widget)
 
