@@ -4,9 +4,10 @@ A super simple prototype of a license plate detection application.
 
 Built with:
 
-- PyQT
-- YoloV8
-- SQLite
+- PySide6 - GUI
+- OpenCV - For image transformations
+- YoloV5 - For detections (Might upgrade to YoloV8)
+- SQLite - Data storage
 
 <h2>Table of Contents</h2>
 
@@ -39,7 +40,12 @@ source .venv/bin/activate
 3. Install Deps
 
 ```sh
+# Install deps for the project.
 pip install -r requirements.txt
+
+# Install deps for the model.
+git clone https://github.com/ultralytics/yolov5
+pip install -r yolov5/requirements.txt
 ```
 
 ## Resources
