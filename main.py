@@ -1,6 +1,6 @@
 import sys
 from PySide6.QtWidgets import QApplication
-from screens.app_screen import LicensePlateDetection
+from LicensePlateDetection.screens.app_screen import LicensePlateDetection
 
 
 if __name__ == "__main__":
