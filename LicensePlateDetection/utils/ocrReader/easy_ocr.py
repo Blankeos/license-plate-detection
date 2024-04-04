@@ -17,15 +17,20 @@ class EasyOCR(BaseOCR):
         texts = []
         scores = []
 
-        for detection in detections:
+        for i, detection in enumerate(detections):
             bbox, text, score = detection
 
             text: str = text.replace(" ", "")
             text = text.strip('!@#$%^&*()_+-=[]{}|;:",.<>/? \n\t').upper().lstrip('-').rstrip('-')
             
+            # Special niche case we have (when the plate number has NCR, REGION 6, etc. It's usually always the third). 
+            # for this, workaround is just removing the third item if it's not a number
+            if ((i == 1 or i == 2) and not text.isdigit()):
+                break
             texts.append(text)
             scores.append(score)
         
+        print(texts)
         text = ''.join(texts)
         scores = np.average(scores)
 
