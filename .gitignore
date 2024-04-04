@@ -161,4 +161,5 @@ cython_debug/
 
 yolov5
 yolov5s.pt
+best.pt
 cgjj_best.pt
