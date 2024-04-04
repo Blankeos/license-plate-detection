@@ -1,6 +1,11 @@
 from PySide6.QtCore import Qt, QMargins, QPoint, QRect, QSize
 from PySide6.QtWidgets import QApplication, QLayout, QPushButton, QSizePolicy, QWidget
 
+"""
+A layout that imitates 'flex-wrap' in tailwind
+
+Source: https://doc.qt.io/qtforpython-6/examples/example_widgets_layouts_flowlayout.html
+"""
 class FlowLayout(QLayout):
     def __init__(self, parent=None):
         super().__init__(parent)
