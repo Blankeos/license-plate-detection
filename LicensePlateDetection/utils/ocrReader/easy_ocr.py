@@ -30,7 +30,6 @@ class EasyOCR(BaseOCR):
             texts.append(text)
             scores.append(score)
         
-        print(texts)
         text = ''.join(texts)
         scores = np.average(scores)
 

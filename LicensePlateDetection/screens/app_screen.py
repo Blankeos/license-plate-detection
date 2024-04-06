@@ -1,5 +1,7 @@
 import datetime
 from typing import List
+
+# Qt
 from PySide6.QtWidgets import (QApplication, QListWidget, QMainWindow, QWidget, QHeaderView, QTableView, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QSizePolicy, QMenuBar, QMenu)
 from PySide6.QtGui import QImage, QPixmap, QAction
 from PySide6.QtCore import Qt, QTimer, QSize
@@ -7,33 +9,33 @@ from PySide6.QtCore import Qt, QTimer, QSize
 # Import for OpenCV
 import cv2
 import numpy as np
-import json
 
 # Torch
 import torch
-from pathlib import Path
+
+# SQLite
+import sqlite3
 
 # src
 from LicensePlateDetection.tablemodels.licenseplates_tablemodel import LicensePlatesTableModel
+from LicensePlateDetection.utils.datastructure.hashqueue import HashQueue
 from LicensePlateDetection.utils.formatDate import formatDate
 from LicensePlateDetection.utils.validation import validate_license_plate
 from LicensePlateDetection.widgets.flow_layout import FlowLayout
 
-# MODEL_PATH = Path("./cgjj_best.pt").resolve()
+# MODEL_PATH
+from pathlib import Path
 MODEL_PATH = Path("./best.pt").resolve()
 YOLO_PATH = Path("./yolov5").resolve()
 
 # Model Instance
 model = torch.hub.load(YOLO_PATH.as_posix(), 'custom', MODEL_PATH.as_posix(), source='local')  # local repo
-# model = torch.hub.load('ultralytics/yolov5', 'yolov5s') # remote repo using a pre-trained model.
 
 # OCR
 from LicensePlateDetection.utils.ocrReader.base_ocr import BaseOCR
 from LicensePlateDetection.utils.ocrReader.easy_ocr import EasyOCR
 # from utils.ocrReader.pytesseract_ocr import PytesseractOCR
 # from utils.ocrReader.tesserocr_ocr import TesserOCR
-
-
 
 class LicensePlateDetection(QMainWindow):
     def __init__(self):
@@ -42,7 +44,7 @@ class LicensePlateDetection(QMainWindow):
         # CONFIG
         self.ocrReader: BaseOCR = EasyOCR()
         self.detect_interval_counter = 1
-        self.DETECT_INTERVAL = 5
+        self.DETECT_INTERVAL = 50
 
         # Set up the main window
         self.setWindowTitle("License Plate Detection")
@@ -57,20 +59,25 @@ class LicensePlateDetection(QMainWindow):
         quit_menu = QMenu("\0Options", self)
         menubar.addMenu(quit_menu)
 
-        # Create the Quit action
         quit_action = QAction(" &Quit", self)
         quit_action.setShortcut("Ctrl+Q")
         quit_action.triggered.connect(self.close)
         quit_menu.addAction(quit_action)
 
-        ### -----
+        # ----------------------------------------------------------------------
+        # Main Layout
+        # ----------------------------------------------------------------------
 
         # Create main layout (horizontal)
         self.main_layout = QHBoxLayout()
         self.setCentralWidget(QWidget())
         self.centralWidget().setLayout(self.main_layout)
 
-        # Image display area (left side)
+
+        # ----------------------------------------------------------------------
+        # Left Layout (Image and Start Button)
+        # ----------------------------------------------------------------------
+
         self.left_layout = QVBoxLayout()
         self.image_label = QLabel()
         # self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -84,21 +91,16 @@ class LicensePlateDetection(QMainWindow):
         self.main_layout.addLayout(self.left_layout)
 
         # ----------------------------------------------------------------------
+        # Right Layout (Detections & Detection Logs)
+        # ----------------------------------------------------------------------
 
-        # Right Layout (right side)
         self.right_layout = QVBoxLayout()
-        
 
+        # Current Detections
         self.currentDetectionsHeader = QLabel("<h4>Current Detections</h4>")
         self.right_layout.addWidget(self.currentDetectionsHeader)
 
         self.right_flow_layout = FlowLayout()
-        # flow_layout.addWidget(QPushButton("Short"))
-        # flow_layout.addWidget(QPushButton("Longer"))
-        # flow_layout.addWidget(QPushButton("Different text"))
-        # flow_layout.addWidget(QPushButton("More text"))
-        # flow_layout.addWidget(QPushButton("Even longer button text"))
-
         self.right_layout.addLayout(self.right_flow_layout)
 
         # Currently Detected
@@ -107,58 +109,41 @@ class LicensePlateDetection(QMainWindow):
         # Table of the Recently Detected
         self.table_widget = QTableView()
         self.table_widget.setMaximumWidth(500)
-        self.license_plates_model = LicensePlatesTableModel(self, [("8192 DAG", formatDate(datetime.datetime.now() ) ) ], ["License Plate", "Date Detected"])
+        self.table_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.table_widget.resize
+        self.license_plates_model = LicensePlatesTableModel(self, [], ["License Plate", "Date Detected"])
         self.table_widget.setModel(self.license_plates_model)
         self.table_widget.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.right_layout.addWidget(self.table_widget)
-        self.license_plates_model.addRows([("CARLO 123", formatDate(datetime.datetime.now()) )])
-        self.license_plates_model.insertRows(0, [("TEST 0812", formatDate(datetime.datetime.now()) ), ("TESLA", formatDate(datetime.datetime.now()) )])
 
-        # self.list_widget = QListWidget()
-        # self.list_widget.addItems(["Apple", "Grapes", "Banana", "Nice"])
-        # self.list_widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
-        # self.list_widget.setMaximumHeight(200)
-        # self.right_layout.addWidget(self.list_widget)
+        self.recentlyDetected = HashQueue()
 
-        # self.right_layout.setSizeConstraint(QVBoxLayout.SizeConstraint.SetFixedSize)
-        # self.right_layout.setAlignment(Qt.AlignmentFlag.AlignBaseline)
-        # self.right_layout.setContentsMargins(20,20,20,20)
+        self.main_layout.addLayout(self.right_layout)
 
-        # sizer_layout = QVBoxLayout(); sizer_layout.setContentsMargins(200, 0, 0, 200); 
-        # sizer_layout.setSizeConstraint(QVBoxLayout.SizeConstraint.SetFixedSize)
-        # self.right_layout.addLayout(sizer_layout)
-
-        # text_label = QLabel("This is some text information.")
-        # # text_label.setWordWrap(True)
-        # text_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        # self.right_layout.addWidget(text_label) # ADD
+        # ----------------------------------------------------------------------
+        # Data Intialization
+        # ----------------------------------------------------------------------
+        self.recentlyDetected = HashQueue()
+        self.sqlite_connection = sqlite3.connect('data.db') # Use this to commit changes.
+        self.sqlite_cursor = self.sqlite_connection.cursor() # Use this to execute SQL commands
         
+        self.sqlite_cursor.execute('''
+            CREATE TABLE IF NOT EXISTS license_plates (
+                id INTEGER PRIMARY KEY,
+                license_plate TEXT NOT NULL,
+                datetime_detected DATETIME NOT NULL
+            )
+        ''')
+        self.sqlite_connection.commit()
 
-        # another_label = QLabel("This is another text")
-        # another_label.setWordWrap(True)
-        # another_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        # self.right_layout.addWidget(another_label) # ADD
-        # self.text_label.setStyleSheet('background: yellow')
-
-        # fruit_list_box = QVBoxLayout()
-        # fruit_list_box.setSizeConstraint(QVBoxLayout.SizeConstraint.SetFixedSize)
-        # fruit_labels = ["Apple", "Grapes", "Oranges"]
-        # for label in fruit_labels:
-        #     label_widget = QLabel(label)
-        #     label_widget.setWordWrap(True)
-        #     label_widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        #     fruit_list_box.addWidget(label_widget)
-        # self.right_layout.addLayout(fruit_list_box) # ADD
-
-        self.right_layout.addStretch()
-
-
-
-        self.main_layout.addLayout(self.right_layout) # ADD
-
-        ###----
-        self.shown = False
-
+        self.sqlite_cursor.execute("SELECT * FROM license_plates")
+        rows = self.sqlite_cursor.fetchall()
+        rows_to_tablemodel = [(license_plate, date_detected) for _, license_plate, date_detected in rows]
+        self.license_plates_model.addRows(rows_to_tablemodel)
+        
+        # ----------------------------------------------------------------------
+        # Update Loop Initialization
+        # ----------------------------------------------------------------------
 
         # Setup webcam and timer
         self.cap = cv2.VideoCapture(0)  # Change index for multiple cameras
@@ -220,13 +205,7 @@ class LicensePlateDetection(QMainWindow):
         crops = results.crop(save=False)
         
         return (results, crops, results.xyxy[0])
-
-    # def readLicensePlates(self, crops: list[dict]):
-    #     for crop in crops:
-    #         gray = cv2.cvtColor(crop['im'], cv2.COLOR_BGR2GRAY)
-
-
-    #     pass
+    
     def displayCroppedImages(self, crops: list[dir]):
         # 1. Delete All
         while (child := self.right_flow_layout.takeAt(0)) != None:
@@ -252,8 +231,7 @@ class LicensePlateDetection(QMainWindow):
 
             # Create label with image
             crop_label = QLabel()
-            # Resize crop to 128x128
-            # resized_crop = cv2.resize(crop['im'], (128, 128))
+            # Resize crop to 128x128 (For display only)
             resized_crop = cv2.resize(gray, (128, 128))
             resized_crop = cv2.cvtColor(resized_crop, cv2.COLOR_GRAY2RGB)
 
@@ -262,13 +240,16 @@ class LicensePlateDetection(QMainWindow):
             # Add label to layout
             crop_label.setPixmap(QPixmap.fromImage(im))
 
+            # Perform OCR
             ocr_text, score = self.ocrReader.read(gray)
 
             label_text = f"{crop['label']}\n{ocr_text} {score:.2f}" if ocr_text != None else crop['label']
             
             label_widget = QLabel(label_text)
+
             if (validate_license_plate(ocr_text)):
                 label_widget.setStyleSheet("color: green;")
+                self.addLicensePlateToTable(ocr_text)
             else:
                 label_widget.setStyleSheet("color: red;")
 
@@ -277,7 +258,27 @@ class LicensePlateDetection(QMainWindow):
 
             self.right_flow_layout.addWidget(v_widget)
 
+    def addLicensePlateToTable(self, license_plate: str):
+        if (self.recentlyDetected.has(license_plate)):
+            return
+        
+        
+        # Can now add!
+        datetime_detected = datetime.datetime.now()
+        formatted_datetime_detected = formatDate(datetime_detected)
+
+        # 1. Insert Row
+        self.license_plates_model.insertRows(0, [(license_plate, formatted_datetime_detected)])
+        # 2. Add to Recently Detected to avoid spamming
+        self.recentlyDetected.add(license_plate)       
+        # 3. Add to the database
+        self.sqlite_cursor.execute("INSERT INTO license_plates (license_plate, datetime_detected) VALUES (?, ?)", (license_plate, datetime_detected))
+        self.sqlite_connection.commit()
+        
     def toggle_grayscale(self):
+        """
+        DeprecationWarning: This method will be deprecated.
+        """
         self.is_grayscale = not self.is_grayscale
 
     def toggleDetecting(self):
