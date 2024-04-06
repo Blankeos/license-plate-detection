@@ -7,7 +7,7 @@ Built with:
 - PySide6 - GUI
 - OpenCV - For image transformations
 - YoloV5 - For detections (Might upgrade to YoloV8)
-- Tesserocr - for OCR detection
+- EasyOCR - for OCR detection
 - SQLite - Data storage
 
 <h2>Table of Contents</h2>
