@@ -2,16 +2,16 @@ from typing import List
 from PySide6 import QtCore
 
 class LicensePlatesTableModel(QtCore.QAbstractTableModel):
-    def __init__(self, parent, mylist, header, *args):
+    def __init__(self, parent, initialList, header, *args):
         QtCore.QAbstractTableModel.__init__(self, parent, *args)
-        self.mylist: List[tuple[str, str]] = mylist
+        self.mylist: List[tuple[str, str]] = initialList
         self.header = header
 
     def rowCount(self, parent):
         return len(self.mylist)
 
     def columnCount(self, parent):
-        return len(self.mylist[0])
+        return len(self.header)
 
     def data(self, index, role):
         if not index.isValid():
