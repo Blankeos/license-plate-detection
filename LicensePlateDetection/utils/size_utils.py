@@ -1,4 +1,4 @@
-from PyQt6.QtCore import QSize
+from PySide6.QtCore import QSize
 
 def get_half_width(size: QSize):
     return int(size.height() / 2)
