@@ -138,7 +138,7 @@ class LicensePlateDetection(QMainWindow):
 
         self.sqlite_cursor.execute("SELECT * FROM license_plates")
         rows = self.sqlite_cursor.fetchall()
-        rows_to_tablemodel = [(license_plate, date_detected) for _, license_plate, date_detected in rows]
+        rows_to_tablemodel = [(license_plate, formatDate(date_detected)) for _, license_plate, date_detected in rows]
         self.license_plates_model.addRows(rows_to_tablemodel)
         
         # ----------------------------------------------------------------------

@@ -20,7 +20,6 @@ Built with:
 ## 📝 Running Requirements
 
 - Install [Python 3.12.2](https://www.python.org/downloads/)
-- Install [Tesseract OCR](https://tesseract-ocr.github.io/tessdoc/Installation.html) - `brew install tesseract` (on Mac)
 
 ## 🏁 Getting Started
 

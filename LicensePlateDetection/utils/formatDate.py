@@ -1,7 +1,7 @@
 
 import datetime
 
-def formatDate(date: datetime.datetime) -> str:
+def formatDate(date: datetime.datetime | str) -> str:
     """
     Format a datetime object into a human-readable string.
 
@@ -11,4 +11,6 @@ def formatDate(date: datetime.datetime) -> str:
     Returns:
         str: The formatted date.
     """
-    return date.strftime("%B %d, %Y %H:%M:%S")
+    if isinstance(date, str):
+        date = datetime.datetime.fromisoformat(date)
+    return date.strftime("%B %d, %Y %I:%M %p")
