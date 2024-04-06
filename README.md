@@ -60,6 +60,12 @@ git clone https://github.com/ultralytics/yolov5
 pip install -r yolov5/requirements.txt
 ```
 
+4. Run the app (It will take a while the first run)
+
+```sh
+python main.py
+```
+
 ## Resources
 
 https://realpython.com/python-pyqt-gui-calculator/
