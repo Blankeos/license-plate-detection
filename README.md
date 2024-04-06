@@ -56,7 +56,3 @@ pip install -r yolov5/requirements.txt
 https://realpython.com/python-pyqt-gui-calculator/
 
 ## Notes
-
-- If issues with tesserocr:
-  - `pip uninstall tesserocr`
-  - `pip install --no-binary :all: tesserocr`
