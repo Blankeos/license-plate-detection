@@ -19,11 +19,21 @@ Built with:
 
 ## 📝 Running Requirements
 
+- Install [Git](https://git-scm.com/downloads) - On Mac it's already installed.
 - Install [Python 3.12.2](https://www.python.org/downloads/)
 
 ## 🏁 Getting Started
 
-1. Create Virtual Env:
+Open your terminal and do the following:
+
+1. Git clone and go to directory
+
+```sh
+git clone https://github.com/Blankeos/license-plate-detection
+cd license-plate-detection
+```
+
+2. Create Virtual Env:
 
 ```sh
 python -m venv .venv
