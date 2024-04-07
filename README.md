@@ -60,7 +60,9 @@ git clone https://github.com/ultralytics/yolov5
 pip install -r yolov5/requirements.txt
 ```
 
-4. Run the app (It will take a while the first run)
+4. Download the model [here](https://github.com/KALYAN1045/Automatic-Number-Plate-Recognition-using-YOLOv5/blob/main/Weights/best.pt). Click on [•••] > Download. Copy paste `best.pt` into the `license-plate-detection` folder (should be the same directory as your `main.py`)
+
+5. Run the app (It will take a while the first run)
 
 ```sh
 python main.py
