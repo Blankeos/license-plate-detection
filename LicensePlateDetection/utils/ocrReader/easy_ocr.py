@@ -31,6 +31,9 @@ class EasyOCR(BaseOCR):
             scores.append(score)
         
         text = ''.join(texts)
-        scores = np.average(scores)
+        
+        scores_average = None
+        if (len(scores) > 0):
+            scores_average = np.average(scores)
 
-        return text, scores
+        return text, scores_average
