@@ -8,7 +8,7 @@ Built with:
 - OpenCV - For image transformations
 - YoloV5 - For detections (Might upgrade to YoloV8)
 - EasyOCR - for OCR detection
-- SQLite - Data storage
+- Firebase - For cloud data storage.
 
 <h2>Table of Contents</h2>
 
@@ -60,7 +60,39 @@ git clone https://github.com/ultralytics/yolov5
 pip install -r yolov5/requirements.txt
 ```
 
-4. Download the model [here](https://github.com/KALYAN1045/Automatic-Number-Plate-Recognition-using-YOLOv5/blob/main/Weights/best.pt). Click on [•••] > Download. Copy paste `best.pt` into the `license-plate-detection` folder (should be the same directory as your `main.py`)
+4. Create a file called `serviceAccount.json` in the root and paste your **Firebase Project Service Credentials**
+
+   > This data is sensitive. Protect it or you risk getting spammed on Firebase.
+
+    <details>
+    
+    <summary>💡 How to generate it.</summary>
+
+   1. Go to project settings in Firebase.
+      ![step 1 - go to project settings](docs/generate-key-step-1.png)
+
+   2. Generate private key.
+      ![step 2 - generate private key](docs/generate-key-step-2.png)
+
+   3. Rename it to `serviceAccount.json`
+      ```jsonc
+      // Example `serviceAccount.json`
+      {
+        "type": "service_account",
+        "project_id": "project-id-here",
+        "private_key_id": "private-key-id-here",
+        "private_key": "private-key-here",
+        "client_email": "license-plate-detection-v1-ser@project-id-here.iam.gserviceaccount.com",
+        "client_id": "123456789101112131415",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/subdomain.iam.gserviceaccount.com",
+        "universe_domain": "googleapis.com"
+      }
+      ```
+
+    </details>
 
 5. Run the app (It will take a while the first run)
 
@@ -73,3 +105,5 @@ python main.py
 https://realpython.com/python-pyqt-gui-calculator/
 
 ## Notes
+
+- We use an existing YoloV5 model `best.pt` from this repo: [here](https://github.com/KALYAN1045/Automatic-Number-Plate-Recognition-using-YOLOv5/blob/main/Weights/best.pt).
