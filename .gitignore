@@ -159,8 +159,12 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+.DS_Store
+
 yolov5
 yolov5s.pt
-best.pt
 cgjj_best.pt
 data.db
+
+# This should be protected. So it's gitignored.
+serviceAccount.json
