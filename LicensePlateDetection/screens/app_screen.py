@@ -13,8 +13,8 @@ import numpy as np
 # Torch
 import torch
 
-# SQLite
-import sqlite3
+# Firestore
+from LicensePlateDetection.database.firestore import getAllLicensePlates, insertNewLicensePlate
 
 # src
 from LicensePlateDetection.tablemodels.licenseplates_tablemodel import LicensePlatesTableModel
@@ -124,21 +124,12 @@ class LicensePlateDetection(QMainWindow):
         # Data Intialization
         # ----------------------------------------------------------------------
         self.recentlyDetected = HashQueue()
-        self.sqlite_connection = sqlite3.connect('data.db') # Use this to commit changes.
-        self.sqlite_cursor = self.sqlite_connection.cursor() # Use this to execute SQL commands
-        
-        self.sqlite_cursor.execute('''
-            CREATE TABLE IF NOT EXISTS license_plates (
-                id INTEGER PRIMARY KEY,
-                license_plate TEXT NOT NULL,
-                datetime_detected DATETIME NOT NULL
-            )
-        ''')
-        self.sqlite_connection.commit()
 
-        self.sqlite_cursor.execute("SELECT * FROM license_plates")
-        rows = self.sqlite_cursor.fetchall()
-        rows_to_tablemodel = [(license_plate, formatDate(date_detected)) for _, license_plate, date_detected in rows]
+        # Get existing data from the database.
+        licensePlateEntities = getAllLicensePlates() 
+
+        # Add it DB data to the TableView.
+        rows_to_tablemodel = [(entity.license_plate, formatDate(entity.date_detected)) for entity in licensePlateEntities] 
         self.license_plates_model.addRows(rows_to_tablemodel)
         
         # ----------------------------------------------------------------------
@@ -272,8 +263,7 @@ class LicensePlateDetection(QMainWindow):
         # 2. Add to Recently Detected to avoid spamming
         self.recentlyDetected.add(license_plate)       
         # 3. Add to the database
-        self.sqlite_cursor.execute("INSERT INTO license_plates (license_plate, datetime_detected) VALUES (?, ?)", (license_plate, datetime_detected))
-        self.sqlite_connection.commit()
+        insertNewLicensePlate(license_plate, datetime_detected)
         
     def toggle_grayscale(self):
         """
