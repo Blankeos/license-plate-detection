@@ -25,11 +25,23 @@ from LicensePlateDetection.widgets.flow_layout import FlowLayout
 
 # MODEL_PATH
 from pathlib import Path
-MODEL_PATH = Path("./best.pt").resolve()
+MODEL_PATH = Path("./best.pt").resolve() # A yolov5 model
 YOLO_PATH = Path("./yolov5").resolve()
 
 # Model Instance
-model = torch.hub.load(YOLO_PATH.as_posix(), 'custom', MODEL_PATH.as_posix(), source='local')  # local repo
+# 1. Load the model
+model = torch.hub.load(YOLO_PATH.as_posix(), 'custom', MODEL_PATH.as_posix(), source='local', force_reload=True)  # local repo
+
+# 2. Change to mps or cuda
+if (torch.backends.mps.is_available()):
+    model.to(torch.device("mps")) # ✅ This is what worked.
+elif (torch.cuda.is_available()):
+    model.to(torch.device("cuda"))
+
+# Check if running on cuda/mps/cpu
+print("[Model] is cuda (nvidia GPU, faster)??", next(model.parameters()).is_cuda) # returns boolean
+print("[Model] is cpu (no GPU, slower)??", next(model.parameters()).is_cpu) # returns boolean
+print("[Model] is mps (mac GPU, faster)??", next(model.parameters()).is_mps) # returns boolean
 
 # OCR
 from LicensePlateDetection.utils.ocrReader.base_ocr import BaseOCR
