@@ -2,9 +2,12 @@ from typing import List
 from PySide6 import QtCore
 
 class LicensePlatesTableModel(QtCore.QAbstractTableModel):
-    def __init__(self, parent, initialList, header, *args):
+    """
+    (col1: license_plate, col2: date_detected, col3: registered)
+    """
+    def __init__(self, parent, initialList: List[tuple[str, str, str]], header, *args):
         QtCore.QAbstractTableModel.__init__(self, parent, *args)
-        self.mylist: List[tuple[str, str]] = initialList
+        self.mylist: List[tuple[str, str, str]] = initialList
         self.header = header
 
     def rowCount(self, parent):
@@ -26,7 +29,7 @@ class LicensePlatesTableModel(QtCore.QAbstractTableModel):
             self.mylist.insert(position + index, row)
         self.endInsertRows()
     
-    def addRows(self, rows: List[tuple[str, str]]):
+    def addRows(self, rows: List[tuple[str, str, str]]):
         first = len(self.mylist) - 1
         last = first + len(rows) - 1
         

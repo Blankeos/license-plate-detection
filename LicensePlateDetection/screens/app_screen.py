@@ -2,7 +2,7 @@ import datetime
 from typing import List
 
 # Qt
-from PySide6.QtWidgets import (QApplication, QListWidget, QMainWindow, QWidget, QHeaderView, QTableView, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QSizePolicy, QMenuBar, QMenu)
+from PySide6.QtWidgets import (QApplication, QListWidget, QLayout, QLineEdit, QMainWindow, QWidget, QHeaderView, QTableView, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QSizePolicy, QMenuBar, QMenu)
 from PySide6.QtGui import QImage, QPixmap, QAction
 from PySide6.QtCore import Qt, QTimer, QSize
 
@@ -14,7 +14,7 @@ import numpy as np
 import torch
 
 # Firestore
-from LicensePlateDetection.database.firestore import getAllLicensePlates, insertNewLicensePlate
+from LicensePlateDetection.database.firestore import getAllDetections, getAllRegisteredLicensePlates, insertNewDetection, insertNewRegisteredLicensePlate
 
 # src
 from LicensePlateDetection.tablemodels.licenseplates_tablemodel import LicensePlatesTableModel
@@ -31,17 +31,6 @@ YOLO_PATH = Path("./yolov5").resolve()
 # Model Instance
 # 1. Load the model
 model = torch.hub.load(YOLO_PATH.as_posix(), 'custom', MODEL_PATH.as_posix(), source='local', force_reload=True)  # local repo
-
-# 2. Change to mps or cuda
-if (torch.backends.mps.is_available()):
-    model.to(torch.device("mps")) # ✅ This is what worked.
-elif (torch.cuda.is_available()):
-    model.to(torch.device("cuda"))
-
-# Check if running on cuda/mps/cpu
-print("[Model] is cuda (nvidia GPU, faster)??", next(model.parameters()).is_cuda) # returns boolean
-print("[Model] is cpu (no GPU, slower)??", next(model.parameters()).is_cpu) # returns boolean
-print("[Model] is mps (mac GPU, faster)??", next(model.parameters()).is_mps) # returns boolean
 
 # OCR
 from LicensePlateDetection.utils.ocrReader.base_ocr import BaseOCR
@@ -115,21 +104,47 @@ class LicensePlateDetection(QMainWindow):
         self.right_flow_layout = FlowLayout()
         self.right_layout.addLayout(self.right_flow_layout)
 
-        # Currently Detected
+        # Table of the Recently Detected
         self.right_layout.addWidget(QLabel("<h4>License Detection Logs</h4>"))
 
-        # Table of the Recently Detected
-        self.table_widget = QTableView()
-        self.table_widget.setMaximumWidth(500)
-        self.table_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.table_widget.resize
-        self.license_plates_model = LicensePlatesTableModel(self, [], ["License Plate", "Date Detected"])
-        self.table_widget.setModel(self.license_plates_model)
-        self.table_widget.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        self.right_layout.addWidget(self.table_widget)
+        # - Table
+        self.logs_table_widget = QTableView()
+        self.logs_table_widget.setMaximumWidth(500)
+        self.logs_table_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.license_plates_model = LicensePlatesTableModel(self, [], ["License Plate", "Date Detected", "Registered"])
+        self.logs_table_widget.setModel(self.license_plates_model)
+        self.logs_table_widget.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.right_layout.addWidget(self.logs_table_widget)
 
-        self.recentlyDetected = HashQueue()
+        # Table for Registered Detections   
+        self.right_layout.addWidget(QLabel("<h4>Registered License Plates</h4>"))
+        
+        # - Input
+        add_new_registration_layout = QHBoxLayout()
 
+        self.registered_table_input = QLineEdit()
+        self.registered_table_input.setMaximumWidth(200)
+        self.registered_table_input.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.registered_table_input.setPlaceholderText("Enter License Plate")
+
+        add_new_registered_button = QPushButton("Register New")
+        add_new_registered_button.setMaximumWidth(150)
+        add_new_registered_button.clicked.connect(self.addNewRegistration)
+
+        add_new_registration_layout.addWidget(self.registered_table_input)
+        add_new_registration_layout.addWidget(add_new_registered_button)
+        self.right_layout.addLayout(add_new_registration_layout)
+
+        # - Table
+        self.registered_table_widget = QTableView()
+        self.registered_table_widget.setMaximumWidth(500)
+        self.registered_table_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.registered_license_plates_model = LicensePlatesTableModel(self, [], ["License Plate", "Date Registered"])
+        self.registered_table_widget.setModel(self.registered_license_plates_model)
+        self.registered_table_widget.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.right_layout.addWidget(self.registered_table_widget)
+
+        # Fin: Add the RightLayout
         self.main_layout.addLayout(self.right_layout)
 
         # ----------------------------------------------------------------------
@@ -138,11 +153,15 @@ class LicensePlateDetection(QMainWindow):
         self.recentlyDetected = HashQueue()
 
         # Get existing data from the database.
-        licensePlateEntities = getAllLicensePlates() 
+        licensePlateEntities = getAllDetections()
+        registeredLicensePlateEntities = getAllRegisteredLicensePlates()
 
         # Add it DB data to the TableView.
-        rows_to_tablemodel = [(entity.license_plate, formatDate(entity.date_detected)) for entity in licensePlateEntities] 
+        rows_to_tablemodel = [(entity.license_plate, formatDate(entity.date_detected), entity.registered) for entity in licensePlateEntities] 
         self.license_plates_model.addRows(rows_to_tablemodel)
+
+        rows_to_registeredtablemodel = [(entity.license_plate, formatDate(entity.date_registered)) for entity in registeredLicensePlateEntities]
+        self.registered_license_plates_model.addRows(rows_to_registeredtablemodel)
         
         # ----------------------------------------------------------------------
         # Update Loop Initialization
@@ -270,12 +289,15 @@ class LicensePlateDetection(QMainWindow):
         datetime_detected = datetime.datetime.now()
         formatted_datetime_detected = formatDate(datetime_detected)
 
-        # 1. Insert Row
-        self.license_plates_model.insertRows(0, [(license_plate, formatted_datetime_detected)])
-        # 2. Add to Recently Detected to avoid spamming
-        self.recentlyDetected.add(license_plate)       
-        # 3. Add to the database
-        insertNewLicensePlate(license_plate, datetime_detected)
+        # 1. Add to the database (Can be improved to make this asynchronous maybe?)
+        new_detection = insertNewDetection(license_plate, datetime_detected)
+
+        # 2. Insert Row
+        self.license_plates_model.insertRows(0, [(new_detection.license_plate, new_detection.formatted_date_detected, new_detection.registered)])
+        
+        # 3. Add to Recently Detected to avoid spamming
+        self.recentlyDetected.add(license_plate)
+
         
     def toggle_grayscale(self):
         """
@@ -294,3 +316,19 @@ class LicensePlateDetection(QMainWindow):
             self.is_detecting = True
             self.startButton.setText('Detecting ON')
             self.startButton.setStyleSheet("background-color: green;")
+
+    def addNewRegistration(self):
+        if (self.registered_table_input.text() == ""):
+            return
+        
+        license_plate = self.registered_table_input.text()
+        registered_date = datetime.datetime.now()
+        
+        # 1. Insert license plate.
+        insertNewRegisteredLicensePlate(license_plate, registered_date)
+
+        # 2. Add to table view.
+        self.registered_license_plates_model.insertRows(0, [(license_plate, formatDate(registered_date))])
+
+        # 3. Clear text
+        self.registered_table_input.setText("")
