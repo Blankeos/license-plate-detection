@@ -9,7 +9,7 @@ reader = easyocr.Reader(['en']) # this needs to run only once to load the model 
 class EasyOCR(BaseOCR):
     def __init__(self):
         super().__init__("easy_ocr")
-        self.reader = easyocr.Reader(['en'], gpu=False) # this needs to run only once to load the model into memory
+        self.reader = easyocr.Reader(['en']) # this needs to run only once to load the model into memory
 
  
     def read(self, image):
