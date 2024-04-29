@@ -20,6 +20,7 @@ from LicensePlateDetection.database.firestore import getAllDetections, getAllReg
 from LicensePlateDetection.tablemodels.licenseplates_tablemodel import LicensePlatesTableModel
 from LicensePlateDetection.utils.datastructure.hashqueue import HashQueue
 from LicensePlateDetection.utils.formatDate import formatDate
+from LicensePlateDetection.utils.threads.intervalThread import IntervalThread
 from LicensePlateDetection.utils.validation import validate_license_plate
 from LicensePlateDetection.widgets.flow_layout import FlowLayout
 
@@ -42,10 +43,25 @@ class LicensePlateDetection(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        # CONFIG
         self.ocrReader: BaseOCR = EasyOCR()
         self.detect_interval_counter = 1
-        self.DETECT_INTERVAL = 50
+
+        # ----------------------------------------------------------------------
+        # Config
+        # ----------------------------------------------------------------------
+        
+        # 1 will object-detect every frame (more laggy). 20 will detect every 20th frame (less laggy).
+        self.DETECT_INTERVAL = 20 
+
+        # To avoid detecting the same plate (SPAM). 
+        # After 3 unique detections, you can detect the same license plate again.
+        self.RECENTLY_DETECTED_LIMIT = 3
+
+        self.RECENTLY_DETECTED_CLEAR_CACHE_INTERVAL = 120 # Every 120 seconds, delete the cache. So you can detect the same license plates again.
+        
+        # ----------------------------------------------------------------------
+        # UI Setup
+        # ----------------------------------------------------------------------
 
         # Set up the main window
         self.setWindowTitle("License Plate Detection")
@@ -175,6 +191,13 @@ class LicensePlateDetection(QMainWindow):
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(0)  # Update every 10 milliseconds
 
+        # ----------------------------------------------------------------------
+        # Threads
+        # ----------------------------------------------------------------------
+        self.recentlyDetectedClearThread = IntervalThread(interval=self.RECENTLY_DETECTED_CLEAR_CACHE_INTERVAL) 
+        self.recentlyDetectedClearThread.any_signal.connect(self.clearRecentlyDetected)
+        self.recentlyDetectedClearThread.start()
+
     def setCurrentDetectionsCount(self, count: int):
         self.currentDetectionsHeader.setText(f"<h4>Current Detections ({count})</h4>")
         
@@ -298,6 +321,9 @@ class LicensePlateDetection(QMainWindow):
         # 3. Add to Recently Detected to avoid spamming
         self.recentlyDetected.add(license_plate)
 
+        # 4. If detected 3 or more, periodically pop the queue.
+        if (len(self.recentlyDetected) >= self.RECENTLY_DETECTED_LIMIT):
+            self.recentlyDetected.pop()
         
     def toggle_grayscale(self):
         """
@@ -332,3 +358,8 @@ class LicensePlateDetection(QMainWindow):
 
         # 3. Clear text
         self.registered_table_input.setText("")
+    
+    def clearRecentlyDetected(self):
+        print("🙈 Before Clearing Recently Detected Cache - ", self.recentlyDetected)
+        self.recentlyDetected.clear()
+        print("🗑️ After Clearing Recently Detected Cache - ", self.recentlyDetected)

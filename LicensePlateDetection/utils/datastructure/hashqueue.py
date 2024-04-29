@@ -20,6 +20,13 @@ class HashQueue():
         map_to_list = list(self.hashmap.keys())
         return f"head: {self.peek()}, items: {list(self.queue.queue)}"
         
+    def __len__(self) -> int:
+        return len(self.hashmap)
+    
+    def clear(self):
+        self.hashmap = {}
+        self.queue = Queue()
+
     def add(self, item):
         # Already exists
         if (self.hashmap.get(item) != None):
@@ -38,6 +45,9 @@ class HashQueue():
         return False
 
     def pop(self):
+        """
+        Removes the first item.
+        """
         # Already empty
         if self.queue.empty():
             return None
